@@ -1,0 +1,5 @@
+numpy
+requests
+python-dotenv
+tqdm
+streamlit

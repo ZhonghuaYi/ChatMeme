@@ -1,0 +1,12 @@
+# mac
+.DS_Store
+
+# python
+__pycache__
+*.pyc
+
+# venv
+venv
+
+# 配置文件
+.env

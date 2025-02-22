@@ -26,6 +26,16 @@ if 'SEARCH_MODEL' not in st.session_state:
     st.session_state.SEARCH_MODEL = Config.SEARCH_MODEL
 if 'SEARCH_BASE_URL' not in st.session_state:
     st.session_state.SEARCH_BASE_URL = Config.SEARCH_BASE_URL
+if 'USE_EMBEDDING_SEARCH' not in st.session_state:
+    st.session_state.USE_EMBEDDING_SEARCH = Config.USE_EMBEDDING_SEARCH
+if 'USE_QUERY_UNDERSTANDING' not in st.session_state:
+    st.session_state.USE_QUERY_UNDERSTANDING = Config.USE_QUERY_UNDERSTANDING
+if 'EMBEDDING_API_KEY' not in st.session_state:
+    st.session_state.EMBEDDING_API_KEY = Config.EMBEDDING_API_KEY
+if 'EMBEDDING_BASE_URL' not in st.session_state:
+    st.session_state.EMBEDDING_BASE_URL = Config.EMBEDDING_BASE_URL
+if 'EMBEDDING_MODEL' not in st.session_state:
+    st.session_state.EMBEDDING_MODEL = Config.EMBEDDING_MODEL
 
 # 使用session state中的配置初始化搜索引擎
 search_engine = ImageSearch(
@@ -35,7 +45,12 @@ search_engine = ImageSearch(
     image_describe_request_delay=st.session_state.IMAGE_DESCRIBE_REQUEST_DELAY,
     search_api_key=st.session_state.SEARCH_API_KEY,
     search_model=st.session_state.SEARCH_MODEL,
-    search_base_url=st.session_state.SEARCH_BASE_URL
+    search_base_url=st.session_state.SEARCH_BASE_URL,
+    use_embedding_search=st.session_state.USE_EMBEDDING_SEARCH,
+    use_query_understanding=st.session_state.USE_QUERY_UNDERSTANDING,
+    embedding_api_key=st.session_state.EMBEDDING_API_KEY,
+    embedding_base_url=st.session_state.EMBEDDING_BASE_URL,
+    embedding_model=st.session_state.EMBEDDING_MODEL
 )
 
 # 搜索框提示语列表
@@ -68,8 +83,17 @@ def search():
                 st.session_state.n_results,
             )
             return (results, reasons) if results else ([], [])
+    except ValueError as e:
+        # API密钥未设置等配置错误
+        st.sidebar.error(f"配置错误: {str(e)}")
+        return [], []
     except Exception as e:
-        st.sidebar.error(f"搜索失败: {e}")
+        # 其他错误（网络问题、API调用失败等）
+        import traceback
+        error_details = traceback.format_exc()
+        st.sidebar.error(f"搜索失败: {str(e)}")
+        st.sidebar.error("详细错误信息:")
+        st.sidebar.code(error_details)
         return [], []
 
 # 回调函数
@@ -96,7 +120,6 @@ with st.sidebar:
         st.text_input(
             "IMAGE_DESCRIBE_API_KEY",
             value=st.session_state.IMAGE_DESCRIBE_API_KEY,
-            type="password",
             key="image_describe_api_key_input",
             on_change=lambda: setattr(st.session_state, 'IMAGE_DESCRIBE_API_KEY', st.session_state.image_describe_api_key_input)
         )
@@ -124,7 +147,6 @@ with st.sidebar:
         st.text_input(
             "SEARCH_API_KEY",
             value=st.session_state.SEARCH_API_KEY,
-            type="password",
             key="search_api_key_input",
             on_change=lambda: setattr(st.session_state, 'SEARCH_API_KEY', st.session_state.search_api_key_input)
         )
@@ -141,6 +163,46 @@ with st.sidebar:
             on_change=lambda: setattr(st.session_state, 'SEARCH_BASE_URL', st.session_state.search_base_url_input)
         )
         
+        # 搜索模式选择
+        st.subheader("搜索模式")
+        st.checkbox(
+            "使用Embedding搜索",
+            value=st.session_state.USE_EMBEDDING_SEARCH,
+            key="use_embedding_search_input",
+            help="启用后将使用基于Embedding的语义搜索",
+            on_change=lambda: setattr(st.session_state, 'USE_EMBEDDING_SEARCH', st.session_state.use_embedding_search_input)
+        )
+        
+        # 只有在启用Embedding搜索时才显示相关配置
+        if st.session_state.USE_EMBEDDING_SEARCH:
+            st.subheader("Embedding配置")
+            st.text_input(
+                "EMBEDDING_API_KEY",
+                value=st.session_state.EMBEDDING_API_KEY,
+                key="embedding_api_key_input",
+                on_change=lambda: setattr(st.session_state, 'EMBEDDING_API_KEY', st.session_state.embedding_api_key_input)
+            )
+            st.text_input(
+                "EMBEDDING_BASE_URL",
+                value=st.session_state.EMBEDDING_BASE_URL,
+                key="embedding_base_url_input",
+                on_change=lambda: setattr(st.session_state, 'EMBEDDING_BASE_URL', st.session_state.embedding_base_url_input)
+            )
+            st.text_input(
+                "EMBEDDING_MODEL",
+                value=st.session_state.EMBEDDING_MODEL,
+                key="embedding_model_input",
+                on_change=lambda: setattr(st.session_state, 'EMBEDDING_MODEL', st.session_state.embedding_model_input)
+            )
+            
+            st.checkbox(
+                "启用查询理解",
+                value=st.session_state.USE_QUERY_UNDERSTANDING,
+                key="use_query_understanding_input",
+                help="启用后会先使用LLM理解查询意图，再进行语义搜索",
+                on_change=lambda: setattr(st.session_state, 'USE_QUERY_UNDERSTANDING', st.session_state.use_query_understanding_input)
+            )
+        
         # 应用配置按钮
         if st.button("应用配置", use_container_width=True):
             # 重新初始化搜索引擎
@@ -151,7 +213,12 @@ with st.sidebar:
                 image_describe_request_delay=st.session_state.IMAGE_DESCRIBE_REQUEST_DELAY,
                 search_api_key=st.session_state.SEARCH_API_KEY,
                 search_model=st.session_state.SEARCH_MODEL,
-                search_base_url=st.session_state.SEARCH_BASE_URL
+                search_base_url=st.session_state.SEARCH_BASE_URL,
+                use_embedding_search=st.session_state.USE_EMBEDDING_SEARCH,
+                use_query_understanding=st.session_state.USE_QUERY_UNDERSTANDING,
+                embedding_api_key=st.session_state.EMBEDDING_API_KEY,
+                embedding_base_url=st.session_state.EMBEDDING_BASE_URL,
+                embedding_model=st.session_state.EMBEDDING_MODEL
             )
             st.success("配置已更新！")
     
@@ -185,12 +252,30 @@ else:
     # 显示搜索结果
     results, reasons = st.session_state.results
     if results:
-        # 使用列布局显示图片
-        cols = st.columns(3)  # 在一行中显示3张图片
-        for i, (image_path, reason) in enumerate(zip(results, reasons)):
-            with cols[i % 3]:
-                st.image(image_path, use_container_width=True)
-                st.markdown(f"*{reason}*")
+        
+        # 计算每行显示的列数
+        cols_per_row = 3
+        # 计算需要多少行
+        num_rows = (len(results) + cols_per_row - 1) // cols_per_row
+        
+        # 按行显示图片
+        for row in range(num_rows):
+            cols = st.columns(cols_per_row)
+            for col_idx in range(cols_per_row):
+                idx = row * cols_per_row + col_idx
+                if idx < len(results):
+                    with cols[col_idx]:
+                        st.markdown('<div class="result-card">', unsafe_allow_html=True)
+                        st.markdown('<div class="image-wrapper">', unsafe_allow_html=True)
+                        st.image(results[idx], use_container_width=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        st.markdown(f"""
+                            <div class="result-info">
+                                <p style='margin:0;font-weight:bold;font-size:14px'>推荐排序 #{idx + 1}</p>
+                                <p style='margin:0;font-style:italic;color:#666;font-size:12px'>推荐原因: {reasons[idx]}</p>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.sidebar.warning("未找到匹配的表情包") 
 
@@ -200,11 +285,7 @@ st.markdown(
     """
     <div style='text-align: center'>
     
-    🌟 关注我 | Follow Me 🌟
-    
-    👨‍💻 [GitHub](https://github.com/DanielZhangyc) · 
-    📺 [哔哩哔哩](https://space.bilibili.com/165404794) · 
-    📝 [博客](https://www.xy0v0.top/)
+    👨‍💻 [GitHub](https://github.com/ZhonghuaYi)
     </div>
     """, 
     unsafe_allow_html=True

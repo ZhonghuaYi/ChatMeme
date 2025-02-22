@@ -14,14 +14,19 @@ class ImageDescribeService:
         self.model = model or Config.IMAGE_DESCRIBE_MODEL
         self.local_image_folder = Config.LOCAL_IMAGE_FOLDER
         self.request_delay = float(request_delay or Config.IMAGE_DESCRIBE_REQUEST_DELAY)
-        
-        # self.api_key = "xai-BjHk4OlpDLmDRM76IRLkeKXq8WVNG7tyHpryCWjZnCTm5y7ooJjTz2krOVfpKWH7W0imO1zSj88RzZKm"
-        # self.base_url = "https://api.x.ai/v1"
-        # self.model = "grok-2-vision-1212"
-        
-        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         self.last_request_time = 0
         
+        self._client = None
+        
+    @property
+    def client(self):
+        """懒加载OpenAI客户端"""
+        if self._client is None:
+            if not self.api_key:
+                raise ValueError("图像描述API密钥未设置")
+            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        return self._client
+    
     @staticmethod
     def encode_image(image_path):
         with open(image_path, "rb") as image_file:

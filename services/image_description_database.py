@@ -3,19 +3,19 @@ import os
 import time
 from config.settings import Config
 from rich import print
-
+from openai import OpenAI
 class ImageDescriptionDatabase:
     def __init__(self, local_image_folder: str, web_url_file: str, database_file: str, index_file: str,
                  image_describe_api_key=None,
                  image_describe_base_url=None,
                  image_describe_model=None,
                  image_describe_request_delay=None):
-        self.image_describe = ImageDescribeService(
-            api_key=image_describe_api_key,
-            base_url=image_describe_base_url,
-            model=image_describe_model,
-            request_delay=image_describe_request_delay
-        )
+        self.image_describe_api_key = image_describe_api_key
+        self.image_describe_base_url = image_describe_base_url
+        self.image_describe_model = image_describe_model
+        self.image_describe_request_delay = float(image_describe_request_delay)
+        
+        self._client = None
         
         self.local_image_folder = local_image_folder
         self.local_image_list = []
@@ -30,10 +30,21 @@ class ImageDescriptionDatabase:
         self.database_file = database_file
         self.index_file = index_file
         
+    @property
+    def client(self):
+        """懒加载OpenAI客户端"""
+        if self._client is None:
+            if not self.image_describe_api_key:
+                raise ValueError("图像描述API密钥未设置")
+            self._client = OpenAI(api_key=self.image_describe_api_key, base_url=self.image_describe_base_url)
+        return self._client
+    
     def load_web_url_file(self):
         if os.path.exists(self.web_url_file):
             with open(self.web_url_file, "r") as f:
-                self.web_url_list = f.readlines()
+                self.web_url_list = [line.strip() for line in f.readlines()]
+                # 移除空行
+                self.web_url_list = [line for line in self.web_url_list if line]
         else:
             self.web_url_list = []
             
@@ -46,10 +57,11 @@ class ImageDescriptionDatabase:
             self.local_image_list = []
     
     def construct_image_description_database(self):
-        print(f"Constructing image description database...")
+        # print(f"Constructing image description database...")
         
         # load database
         if os.path.exists(self.database_file):
+            # print(f"Loading database from {self.database_file}")
             with open(self.database_file, "r") as f:
                 description_list = [line.strip() for line in f.readlines()]
                 # remove empty lines
@@ -57,10 +69,11 @@ class ImageDescriptionDatabase:
         else:
             description_list = []
             
-        print(f"Database loaded: {len(description_list)} descriptions")
+        # print(f"Database loaded: {len(description_list)} descriptions")
         
         # load index
         if os.path.exists(self.index_file):
+            # print(f"Loading index from {self.index_file}")
             with open(self.index_file, "r") as f:
                 index_list = [line.strip() for line in f.readlines()]
                 # remove empty lines
@@ -68,13 +81,13 @@ class ImageDescriptionDatabase:
         else:
             index_list = []
 
-        print(f"Index loaded: {len(index_list)} images")
+        # print(f"Index loaded: {len(index_list)} images")
 
         if len(index_list) != len(description_list):
             # 已有的数据库描述和图片对应不上，需要重新构造数据库   
-            print(f"Reconstructing database...")
+            # print(f"Reconstructing database...")
             for image_path in self.image_url_list:
-                print(f"Describing image: {image_path}")
+                # print(f"Describing image: {image_path}")
                 description = self.image_describe.describe_image(os.path.join(self.local_image_folder, image_path))
                 description_list.append(description)
                 index_list.append(image_path)
@@ -87,15 +100,15 @@ class ImageDescriptionDatabase:
                     for image_path in index_list:
                         f.write(image_path + "\n")
                 
-            print(f"Database reconstructed: {len(description_list)} descriptions")
+            # print(f"Database reconstructed: {len(description_list)} descriptions")
 
         else:
-            # 已有的数据库描述和图片对应得上，不需要重新构造数据库
-            print(f"Database already exists: {len(description_list)} descriptions")
+            # 已有一份数据库描述和图片路径，需要检查是否存在缺失的描述
+            # print(f"Database already exists: {len(description_list)} descriptions")
             # 检查现有的图片路径是否存在于index_list中，如果不存在，创建描述并添加进数据库
             for image_path in self.image_url_list:
                 if image_path not in index_list: 
-                    print(f"Describing image: {image_path}")
+                    # print(f"Describing image: {image_path}")
                     description = self.image_describe.describe_image(os.path.join(self.local_image_folder, image_path))
                     description_list.append(description)
                     index_list.append(image_path)
@@ -108,7 +121,7 @@ class ImageDescriptionDatabase:
                         for image_path in index_list:
                             f.write(image_path + "\n")
             
-            print(f"Database updated: {len(description_list)} descriptions")
+            # print(f"Database updated: {len(description_list)} descriptions")
                     
         self.database_list = description_list
         self.index_list = index_list

@@ -5,7 +5,7 @@ from config.settings import Config
 
 # 页面配置
 st.set_page_config(
-    page_title="ChatMeme",
+    page_title="ChatMeme - 表情包搜索",
     page_icon="🌐",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -62,7 +62,7 @@ SEARCH_PLACEHOLDERS = [
     "如何看待...？",
 ]
 
-st.title("ChatMeme")
+st.title("ChatMeme - 表情包搜索")
 
 # 初始化session state
 if 'placeholder' not in st.session_state:
@@ -77,7 +77,7 @@ def search():
     if not st.session_state.search_query:
         return
     try:
-        with st.spinner('Searching'):
+        with st.spinner('搜索中...'):
             results, reasons = search_engine.search(
                 st.session_state.search_query, 
                 st.session_state.n_results,
@@ -111,32 +111,31 @@ def on_slider_change():
 
 # 侧边栏搜索区域
 with st.sidebar:
-    st.title("🔍 ChatMeme")
-    
+    st.title("🔍 ChatMeme - 表情包搜索")
     # 配置区域（可折叠）
     with st.expander("⚙️ 配置设置"):
         # 图像描述相关配置
         st.subheader("图像描述配置")
         st.text_input(
-            "IMAGE_DESCRIBE_API_KEY",
+            "图像描述API密钥",
             value=st.session_state.IMAGE_DESCRIBE_API_KEY,
             key="image_describe_api_key_input",
             on_change=lambda: setattr(st.session_state, 'IMAGE_DESCRIBE_API_KEY', st.session_state.image_describe_api_key_input)
         )
         st.text_input(
-            "IMAGE_DESCRIBE_BASE_URL",
+            "图像描述基础URL（例如：https://api.openai.com/v1）",
             value=st.session_state.IMAGE_DESCRIBE_BASE_URL,
             key="image_describe_base_url_input",
             on_change=lambda: setattr(st.session_state, 'IMAGE_DESCRIBE_BASE_URL', st.session_state.image_describe_base_url_input)
         )
         st.text_input(
-            "IMAGE_DESCRIBE_MODEL",
+            "图像描述模型",
             value=st.session_state.IMAGE_DESCRIBE_MODEL,
             key="image_describe_model_input",
             on_change=lambda: setattr(st.session_state, 'IMAGE_DESCRIBE_MODEL', st.session_state.image_describe_model_input)
         )
         st.number_input(
-            "IMAGE_DESCRIBE_REQUEST_DELAY",
+            "图像描述请求延迟",
             value=float(st.session_state.IMAGE_DESCRIBE_REQUEST_DELAY),
             key="image_describe_request_delay_input",
             on_change=lambda: setattr(st.session_state, 'IMAGE_DESCRIBE_REQUEST_DELAY', st.session_state.image_describe_request_delay_input)
@@ -145,19 +144,19 @@ with st.sidebar:
         # 搜索相关配置
         st.subheader("搜索配置")
         st.text_input(
-            "SEARCH_API_KEY",
+            "搜索API密钥",
             value=st.session_state.SEARCH_API_KEY,
             key="search_api_key_input",
             on_change=lambda: setattr(st.session_state, 'SEARCH_API_KEY', st.session_state.search_api_key_input)
         )
         st.text_input(
-            "SEARCH_MODEL",
+            "搜索模型",
             value=st.session_state.SEARCH_MODEL,
             key="search_model_input",
             on_change=lambda: setattr(st.session_state, 'SEARCH_MODEL', st.session_state.search_model_input)
         )
         st.text_input(
-            "SEARCH_BASE_URL",
+            "搜索基础URL",
             value=st.session_state.SEARCH_BASE_URL,
             key="search_base_url_input",
             on_change=lambda: setattr(st.session_state, 'SEARCH_BASE_URL', st.session_state.search_base_url_input)
@@ -177,19 +176,19 @@ with st.sidebar:
         if st.session_state.USE_EMBEDDING_SEARCH:
             st.subheader("Embedding配置")
             st.text_input(
-                "EMBEDDING_API_KEY",
+                "Embedding API密钥",
                 value=st.session_state.EMBEDDING_API_KEY,
                 key="embedding_api_key_input",
                 on_change=lambda: setattr(st.session_state, 'EMBEDDING_API_KEY', st.session_state.embedding_api_key_input)
             )
             st.text_input(
-                "EMBEDDING_BASE_URL",
+                "Embedding 基础URL（例如：https://api.openai.com/v1）",
                 value=st.session_state.EMBEDDING_BASE_URL,
                 key="embedding_base_url_input",
                 on_change=lambda: setattr(st.session_state, 'EMBEDDING_BASE_URL', st.session_state.embedding_base_url_input)
             )
             st.text_input(
-                "EMBEDDING_MODEL",
+                "Embedding 模型",
                 value=st.session_state.EMBEDDING_MODEL,
                 key="embedding_model_input",
                 on_change=lambda: setattr(st.session_state, 'EMBEDDING_MODEL', st.session_state.embedding_model_input)
@@ -244,7 +243,7 @@ with st.sidebar:
 # 主区域显示
 if not st.session_state.get("results"):
     # 初始页面显示欢迎信息
-    st.title("👋 Welcome！")
+    st.title("👋 欢迎使用表情包搜索！")
     st.markdown("""
                 在左侧的侧边栏输入或者点击左上角的箭头以开始。
                 """)

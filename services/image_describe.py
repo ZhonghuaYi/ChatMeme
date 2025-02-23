@@ -15,17 +15,6 @@ class ImageDescribeService:
         self.local_image_folder = Config.LOCAL_IMAGE_FOLDER
         self.request_delay = float(request_delay or Config.IMAGE_DESCRIBE_REQUEST_DELAY)
         self.last_request_time = 0
-        
-        self._client = None
-        
-    @property
-    def client(self):
-        """懒加载OpenAI客户端"""
-        if self._client is None:
-            if not self.api_key:
-                raise ValueError("图像描述API密钥未设置")
-            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
-        return self._client
     
     @staticmethod
     def encode_image(image_path):
@@ -40,23 +29,6 @@ class ImageDescribeService:
             return "image_url"
         else:
             return "image_file"
-        
-    # @staticmethod
-    # def normalize_embedding(embedding: List[float]) -> np.ndarray:
-    #     """归一化嵌入向量"""
-    #     arr = np.array(embedding)
-    #     return arr / np.linalg.norm(arr)
-    
-    # def get_embedding(self, text: str, key: str) -> np.ndarray:
-    #     """获取文本嵌入并归一化"""
-    #     headers = {"Authorization": f"Bearer {key if key is not None else self.api_key}"}
-    #     payload = {
-    #         "input": text,
-    #         "model": Config.EMBEDDING_MODEL
-    #     }
-    #     response = requests.post(self.endpoint, json=payload, headers=headers)
-    #     response.raise_for_status()
-    #     return self.normalize_embedding(response.json()['data'][0]['embedding']) 
     
     def describe_image(self, image_url: str) -> str:
         """描述图片"""
@@ -67,6 +39,17 @@ class ImageDescribeService:
             sleep_time = self.request_delay - time_since_last_request
             print(f"等待 {sleep_time:.2f} 秒以遵守API速率限制...")
             time.sleep(sleep_time)
+        
+        if self.api_key is None:
+            raise ValueError("图像描述API密钥未设置")
+
+        if self.base_url is None:
+            raise ValueError("图像描述API基础URL未设置")
+        
+        if self.model is None:
+            raise ValueError("图像描述API模型未设置")
+        
+        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         
         image_type = self.check_image_url_type(image_url)
         
@@ -90,7 +73,7 @@ class ImageDescribeService:
             }
         
         messages = [
-            {"role": "system", "content": "You are a helpful assistant that describes memes."},
+            {"role": "system", "content": "你是表情包识别专家，擅长识别表情包中的人物、文字，并描述这张表情包的含义。"},
             {
                 "role": "user",
                 "content": [
@@ -103,7 +86,7 @@ class ImageDescribeService:
             },
         ]
         
-        description = self.client.chat.completions.create(
+        description = client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=0.5,

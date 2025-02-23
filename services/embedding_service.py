@@ -8,16 +8,6 @@ class EmbeddingService:
         self.api_key = api_key
         self.base_url = base_url
         self.model = model
-        self._client = None
-    
-    @property
-    def client(self):
-        """加载OpenAI客户端"""
-        if self._client is None:
-            if not self.api_key:
-                raise ValueError("Embedding API密钥未设置")
-            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
-        return self._client
     
     @staticmethod
     def normalize_embedding(embedding: List[float]) -> np.ndarray:
@@ -27,7 +17,18 @@ class EmbeddingService:
     
     def get_embedding(self, text: str) -> np.ndarray:
         # """获取文本嵌入并归一化"""
-        response = self.client.embeddings.create(
+        
+        if self.api_key is None:
+            raise ValueError("Embedding API密钥未设置")
+        
+        if self.base_url is None:
+            raise ValueError("Embedding API基础URL未设置")
+        
+        if self.model is None:
+            raise ValueError("Embedding API模型未设置")
+        
+        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        response = client.embeddings.create(
             model=self.model,
             input=text
         )
